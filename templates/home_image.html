@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen Evaluator - Image Answer</title>
+    <link rel="stylesheet" href="./style.css">
+    <style>
+        /* keep same styles as home.html but slightly adapted */
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6; color: #1f2937; display: flex; justify-content: center; padding: 40px 20px; }
+        .container { background: #fff; width: 100%; max-width: 700px; border-radius: 12px; padding: 40px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; }
+        input[type="file"] { width: 100%; }
+        .btn-submit { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background-color: #4791c3; color: white; border: none; padding: 14px; font-size: 1rem; font-weight: 600; border-radius: 8px; cursor: pointer; }
+        .response-section { margin-top: 30px; }
+        textarea{ width: 100%;}
+        pre { background:#1e1e1e; color:#a5d6ff; padding:12px; border-radius:8px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="badge">Zen Evaluator</div>
+            <h1>Upload Answer Image</h1>
+            <p class="subtitle">The uploaded image will be OCR'd and sent to Ollama</p>
+        </header>
+
+        <form method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="question">Question</label>
+                <textarea id="question" name="question" rows="3" required>{{ question|default('') }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="marks">Max Marks</label>
+                <input type="number" id="marks" name="marks" value="{{ marks|default('') }}" min="0">
+            </div>
+
+            <div class="form-group">
+                <label for="keypoints">Keypoints <span class="hint">(Comma or newline separated)</span></label>
+                <textarea id="keypoints" name="keypoints" rows="2">{{ keypoints|default('') }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="answer_image">Answer Image</label>
+                <input type="file" id="answer_image" name="answer_image" accept="image/*" required>
+            </div>
+
+            <button type="submit" class="btn-submit">Submit Image</button>
+        </form>
+
+        {% if extracted_text is defined and extracted_text %}
+        <div class="response-section">
+            <h2>OCR Extracted Text</h2>
+            <pre>{{ extracted_text }}</pre>
+        </div>
+        {% endif %}
+
+        {% if result is defined %}
+        <div class="response-section">
+            <h2>Model Response</h2>
+            <pre>{{ result }}</pre>
+        </div>
+        {% endif %}
+
+    </div>
+</body>
+</html>

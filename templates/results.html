@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot</title>
+    <style>
+        body { font-family: Arial, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; background:#f6f8fa; }
+        .panel { width:640px; background:#fff; padding:16px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.08); }
+        .messages { height:360px; overflow:auto; border:1px solid #eee; padding:12px; border-radius:6px; background:#fafafa; }
+        .msg { margin-bottom:12px; }
+        .user { color:#0366d6; font-weight:600; }
+        .bot { color:#333; }
+        form { display:flex; margin-top:12px; }
+        input[type=text] { flex:1; padding:8px; border:1px solid #ddd; border-radius:6px; }
+        button { margin-left:8px; padding:8px 12px; border-radius:6px; background:#0366d6; color:#fff; border:none; }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <h3>Ollama Chat</h3>
+        <div class="messages" id="messages"></div>
+        <form id="chatForm">
+            <input type="text" id="message" placeholder="Type a message...">
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <script>
+        const messagesEl = document.getElementById('messages')
+        const form = document.getElementById('chatForm')
+
+        function addMessage(text, from='bot'){
+            const div = document.createElement('div')
+            div.className = 'msg ' + from
+            div.textContent = (from === 'user' ? 'You: ' : 'Bot: ') + text
+            messagesEl.appendChild(div)
+            messagesEl.scrollTop = messagesEl.scrollHeight
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault()
+            const input = document.getElementById('message')
+            const msg = input.value.trim()
+            if(!msg) return
+            addMessage(msg, 'user')
+            input.value = ''
+
+            try{
+                const res = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg, model: 'llama2' })
+                })
+                const data = await res.json()
+                if(data.error) addMessage('Error: ' + data.error, 'bot')
+                else addMessage(data.response, 'bot')
+            } catch (err){
+                addMessage('Network error: ' + err.message, 'bot')
+            }
+        })
+    </script>
+</body>
+</html>
