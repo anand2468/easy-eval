@@ -59,7 +59,7 @@ EasyEval operates as a sequential pipeline designed to handle the noise of real-
 
 1.  **Clone the repository:**
     ```bash
-    git clone [https://github.com/anand2468/easy-eval.git](https://github.com/yourusername/easy-eval.git)
+    git clone https://github.com/anand2468/easy-eval.git
     cd easy-eval
     ```
 
