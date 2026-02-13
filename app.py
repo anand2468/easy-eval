@@ -1,5 +1,7 @@
+import base64
 from flask import Flask, request, render_template_string, render_template
 import os
+import ollama
 import requests
 from ollama import Client
 from werkzeug.utils import secure_filename
@@ -35,7 +37,7 @@ def home():
                 print(prompt)
 
                 ollama_url = os.getenv("OLLAMA_URL", "http://localhost:11434/api/chat")
-                model = os.getenv("OLLAMA_MODEL", "easy-eval")
+                model = os.getenv("OLLAMA_MODEL", "easy-ocr")
                 payload = {
                         "model": model,
                         "messages": [
@@ -45,18 +47,19 @@ def home():
 
                 try:
                         o = client.generate(model=model, prompt=prompt)
+                        print(o['response'], "response of model")
                         if isinstance(o, dict):
                                 result = o.get('response') or str(o)
                                 if isinstance(result, str) and result.startswith('response:'):
                                         result = result[9:]
                         else:
-                                result = str(o)
+                                result = o['response']
                 except Exception as e:
                         result = f"Request to Ollama failed: {e}"
 
         return render_template('home.html', result=result, question=question, marks=marks, keypoints=keypoints, answer=answer)
 
-@app.route('/img', methods=['GET', 'POST'])
+@app.route('/image-answer', methods=['GET', 'POST'])
 def image_answer():
         result = None
         question = marks = keypoints = ""
@@ -72,28 +75,45 @@ def image_answer():
                         result = 'No image uploaded'
                         return render_template('home_image.html', result=result, question=question, marks=marks, keypoints=keypoints)
 
-                file = request.files['answer_image']
-                if file.filename == '':
+                files = request.files.getlist('answer_image')
+                if len(files) == 0:
                         result = 'No selected file'
                         return render_template('home_image.html', result=result, question=question, marks=marks, keypoints=keypoints)
 
-                if not allowed_file(file.filename):
-                        result = 'Invalid file type'
-                        return render_template('home_image.html', result=result, question=question, marks=marks, keypoints=keypoints)
+                # if not allowed_file(file.filename):
+                #         result = 'Invalid file type'
+                #         return render_template('home_image.html', result=result, question=question, marks=marks, keypoints=keypoints)
 
-                filename = secure_filename(file.filename)
-                filepath = os.path.join(UPLOAD_FOLDER, filename)
-                file.save(filepath)
+                # filename = secure_filename(file.filename)
+                # filepath = os.path.join(UPLOAD_FOLDER, filename)
+                # file.save(filepath)
+
+                # converting file to base64
+                images_base64 = []
+                for file in files:
+                        image_bytes = file.read()
+                        image_base64 = base64.b64encode(image_bytes).decode('utf-8')
+                        images_base64.append(image_base64)
+
+                ocr_model = "glm-ocr"
+                ocr_payload = {
+                        "role": "user",
+                        "content": f"extract text:",
+                        'images' : images_base64
+                }
 
                 try:
-                        img = Image.open(filepath)
-                        extracted_text = pytesseract.image_to_string(img)
+                        ocr_response = ollama.chat(
+                                        model=ocr_model,
+                                        messages=[ocr_payload]
+                                )
                 except Exception as e:
-                        result = f'OCR failed: {e}'
-                        return render_template('home_image.html', result=result, question=question, marks=marks, keypoints=keypoints)
-
-                prompt = build_prompt(question, marks, keypoints, extracted_text)
-                model = os.getenv("OLLAMA_MODEL", "easy-eval")
+                        result = "text ectraction failed"
+                        return render_template('home_image.html', result=result, question=question, marks=marks, keypoints=keypoints, extracted_text=extracted_text, filename=filename)
+                
+                print(ocr_response)
+                prompt = build_prompt(question, marks, keypoints, ocr_response.message.content)
+                model = os.getenv("OLLAMA_MODEL", "easy-ocr")
 
                 try:
                         o = client.generate(model=model, prompt=prompt)
